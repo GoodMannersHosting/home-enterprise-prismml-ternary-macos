@@ -7,7 +7,7 @@ MODEL_DIR := "{{INSTALL_DIR}}/models"
 MODEL_FILE := "{{INSTALL_DIR}}/models/Ternary-Bonsai-2-27B-PQ2_0.gguf"
 MODEL_URL := "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf/resolve/main/Ternary-Bonsai-2-27B-PQ2_0.gguf"
 PLIST_FILE := "/Library/LaunchDaemons/llamacpp.plist"
-LLAMA_API_KEY := "CHANGE_ME"
+LLAMA_API_KEY := env("LLAMA_API_KEY", "CHANGE_ME")
 
 check-just:
     @echo "Just is working. Run 'just --list' to see all tasks."
