@@ -7,6 +7,7 @@ MODEL_DIR := "{{INSTALL_DIR}}/models"
 MODEL_FILE := "{{INSTALL_DIR}}/models/Ternary-Bonsai-2-27B-PQ2_0.gguf"
 MODEL_URL := "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf/resolve/main/Ternary-Bonsai-2-27B-PQ2_0.gguf"
 PLIST_FILE := "/Library/LaunchDaemons/llamacpp.plist"
+LLAMA_API_KEY := "CHANGE_ME"
 
 check-just:
     @echo "Just is working. Run 'just --list' to see all tasks."
@@ -50,6 +51,8 @@ install-plist:
     @echo '    <dict>' >> /tmp/llamacpp.plist
     @echo '        <key>METAL_DEVICE_WRAPPER_TYPE</key>' >> /tmp/llamacpp.plist
     @echo '        <string>1</string>' >> /tmp/llamacpp.plist
+    @echo '        <key>LLAMA_API_KEY</key>' >> /tmp/llamacpp.plist
+    @echo '        <string>{{LLAMA_API_KEY}}</string>' >> /tmp/llamacpp.plist
     @echo '    </dict>' >> /tmp/llamacpp.plist
     @echo '    <key>ProgramArguments</key>' >> /tmp/llamacpp.plist
     @echo '    <array>' >> /tmp/llamacpp.plist
@@ -125,9 +128,12 @@ test:
     @echo "Testing model with simple query..."
     curl -s --max-time 60 http://0.0.0.0:8080/v1/chat/completions \
         -H "Content-Type: application/json" \
+        -H "Authorization: Bearer {{LLAMA_API_KEY}}" \
         -d '{"model":"Ternary-Bonsai-2-27B-PQ2_0","messages":[{"role":"user","content":"What is the capital of France? Answer in one word."}],"max_tokens":50}' | \
         python3 -c "import sys,json; d=json.load(sys.stdin); print(d['choices'][0]['message']['content'])"
 
+# Full setup: everything in one command
+# Note: Set LLAMA_API_KEY when running this (defaults to CHANGE_ME)
 setup: init download-binary download-model install-plist start
 
 verify: verify-model status test

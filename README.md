@@ -8,7 +8,8 @@ Running the **PrismML fork of llama.cpp** with the **Ternary-Bonsai-2-27B model*
 2. **Downloaded the model** `Ternary-Bonsai-2-27B-PQ2_0.gguf` (~7.2GB) - the 2-bit ternary quantized version
 3. **Created a LaunchDaemon** at `/Library/LaunchDaemons/llamacpp.plist` that runs `llama-server` persistently
 4. **Configured the server** to bind to `0.0.0.0:8080` with optimal parameters for a 27B model
-5. **Removed the previous Ollama setup** that was on this machine
+5. **Added API key authentication** via the `LLAMA_API_KEY` environment variable
+6. **Removed the previous Ollama setup** that was on this machine
 
 ## Server configuration
 
@@ -142,8 +143,53 @@ curl -s http://localhost:8080/health
 ```bash
 curl -s http://0.0.0.0:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <YOUR_API_KEY>" \
   -d '{"model":"Ternary-Bonsai-2-27B-PQ2_0","messages":[{"role":"user","content":"What is the capital of France?"}],"max_tokens":50}' | \
   python3 -c "import sys,json; d=json.load(sys.stdin); print(d['choices'][0]['message']['content'])"
+```
+
+Expected output: `Paris`
+
+## Authentication
+
+The server is configured with an API key for authentication. To make requests, include the `Authorization` header:
+
+```bash
+curl -s http://0.0.0.0:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <YOUR_API_KEY>" \
+  -d '{"model":"Ternary-Bonsai-2-27B-PQ2_0","messages":[{"role":"user","content":"What is the capital of France?"}],"max_tokens":50}'
+```
+
+The API key is stored in the `LLAMA_API_KEY` environment variable in the LaunchDaemon configuration at `/Library/LaunchDaemons/llamacpp.plist`.
+
+### Using the justfile with the API key
+
+The justfile has a `LLAMA_API_KEY` variable that defaults to `CHANGE_ME`. You can override it when running commands:
+
+```bash
+LLAMA_API_KEY="your_api_key_here" just setup
+```
+
+Or set it as an environment variable:
+
+```bash
+export LLAMA_API_KEY="your_api_key_here"
+just setup
+```
+
+### Changing the API key
+
+To change the API key, update the `LLAMA_API_KEY` value in the LaunchDaemon plist and restart the service:
+
+```bash
+# Edit the plist file
+sudo nano /Library/LaunchDaemons/llamacpp.plist
+# Update the <string> value for LLAMA_API_KEY
+
+# Restart the service
+sudo launchctl bootout system/llama.cpp
+sudo launchctl bootstrap system /Library/LaunchDaemons/llamacpp.plist
 ```
 
 ## Managing the service
@@ -182,4 +228,4 @@ sudo launchctl bootstrap system /Library/LaunchDaemons/llamacpp.plist
 | `/opt/llama-cpp-prism/llama-server` | Symlink to the server binary |
 | `/opt/llama-cpp-prism/models/Ternary-Bonsai-2-27B-PQ2_0.gguf` | The model file (~7.2GB) |
 | `/opt/llama-cpp-prism/llama-server.log` | Server log output |
-| `/Library/LaunchDaemons/llamacpp.plist` | The LaunchDaemon configuration |
+| `/Library/LaunchDaemons/llamacpp.plist` | The LaunchDaemon configuration (contains API key) |
